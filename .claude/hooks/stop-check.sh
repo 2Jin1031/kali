@@ -4,7 +4,10 @@
 # 바뀐 게 없으면 Gradle이 up-to-date로 건너뛰어 몇 초 안에 끝난다.
 set -uo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:?}" || exit 2
+if [[ -z "${CLAUDE_PROJECT_DIR:-}" ]] || ! cd "$CLAUDE_PROJECT_DIR"; then
+  echo "Stop 훅: 프로젝트 폴더로 이동 실패 (CLAUDE_PROJECT_DIR='${CLAUDE_PROJECT_DIR:-}'). 검사를 못 돌려 끝낼 수 없음" >&2
+  exit 2
+fi
 
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT

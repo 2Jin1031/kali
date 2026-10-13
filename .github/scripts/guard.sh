@@ -5,6 +5,7 @@
 #   3. 보호 경로 변경
 #   4. docs/adr/ 의 "상태: 수락됨" ADR 수정·삭제
 # PR에 `사람-확인` 라벨이 있으면 경고만 하고 통과한다.
+# git 명령이 실패하면 통과시키지 않고 실패한다 (fail-closed).
 #
 # 사용: guard.sh <base-sha> <head-sha>
 # 환경변수: PR_LABELS = 라벨 이름 JSON 배열 (예: ["사람-확인"])
@@ -15,9 +16,29 @@ HEAD="${2:?head sha 필요}"
 LABELS="${PR_LABELS:-[]}"
 APPROVAL_LABEL="사람-확인"
 
+# 한글 경로를 따옴표·8진수 이스케이프 없이 그대로 출력
+git_() { git -c core.quotePath=false "$@"; }
+
+for sha in "$BASE" "$HEAD"; do
+  if ! git_ cat-file -e "$sha^{commit}" 2>/dev/null; then
+    echo "::error::커밋을 찾을 수 없음: $sha (fetch 범위 확인)"
+    exit 1
+  fi
+done
+git_ merge-base "$BASE" "$HEAD" >/dev/null || { echo "::error::merge-base 없음: $BASE $HEAD"; exit 1; }
+
+# 명령 치환은 실패하면 set -e로 스크립트가 멈춘다 (빈 입력으로 통과하지 않게)
+name_status="$(git_ diff --name-status --find-renames "$BASE...$HEAD")"
+added_disabled="$(
+  git_ diff --unified=0 "$BASE...$HEAD" \
+    | awk '/^\+\+\+ /{file=substr($0,7); next}
+           /^\+.*@([A-Za-z_][A-Za-z0-9_]*\.)*Disabled/{print file "\t" substr($0,2)}'
+)"
+
 violations=()
 
-is_test_path() { [[ "$1" == */src/test/* || "$1" == src/test/* ]]; }
+# src/test, src/testFixtures, src/integrationTest 등
+is_test_path() { [[ "$1" =~ (^|/)src/[^/]*[Tt]est[^/]*/ ]]; }
 
 is_protected_path() {
   local p="$1"
@@ -32,21 +53,21 @@ is_protected_path() {
 }
 
 is_accepted_adr_at_base() {
-  local p="$1"
+  local p="$1" content
   [[ "$p" == docs/adr/* ]] || return 1
-  git show "$BASE:$p" 2>/dev/null | grep -q "상태: 수락됨"
+  content="$(git_ show "$BASE:$p" 2>/dev/null)" || return 1
+  [[ "$content" == *"상태: 수락됨"* ]]
 }
 
-# 1. 테스트 코드에 @Disabled 추가 (@DisabledIf..., @DisabledOn... 포함)
-while IFS= read -r line; do
-  violations+=("@Disabled 추가: $line")
-done < <(
-  git diff --unified=0 "$BASE...$HEAD" -- '*/src/test/*' 'src/test/*' \
-    | awk '/^\+\+\+ /{file=substr($0,7); next} /^\+.*@Disabled/{print file ": " substr($0,2)}'
-)
+# 1. 테스트 코드에 @Disabled 추가 (@DisabledIf..., 정규화된 이름 포함)
+while IFS=$'\t' read -r file line; do
+  [[ -z "$file" ]] && continue
+  is_test_path "$file" && violations+=("@Disabled 추가: $file: $line")
+done <<<"$added_disabled"
 
 # 2~4. 파일 단위 검사
 while IFS=$'\t' read -r status path1 path2; do
+  [[ -z "$status" ]] && continue
   case "$status" in
     D)
       is_test_path "$path1" && violations+=("테스트 파일 삭제: $path1")
@@ -65,7 +86,7 @@ while IFS=$'\t' read -r status path1 path2; do
   if [[ "$status" != A ]] && is_accepted_adr_at_base "$path1"; then
     violations+=("수락된 ADR 변경: $path1 ($status)")
   fi
-done < <(git diff --name-status --find-renames "$BASE...$HEAD")
+done <<<"$name_status"
 
 if [[ ${#violations[@]} -eq 0 ]]; then
   echo "가드 통과: 위반 없음"

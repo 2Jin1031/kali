@@ -45,8 +45,4 @@ spotless {
         trimTrailingWhitespace()
         endWithNewline()
     }
-    kotlinGradle {
-        target("*.gradle.kts")
-        ktlint()
-    }
 }
