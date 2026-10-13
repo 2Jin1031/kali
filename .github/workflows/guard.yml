@@ -1,0 +1,45 @@
+name: Guard
+
+# pull_request_target: 워크플로와 가드 스크립트를 PR이 아니라 base 브랜치 것으로 실행한다.
+# 그래서 PR이 이 파일이나 가드를 고쳐도 이번 검사에는 반영되지 않는다.
+# 안전 규칙: PR 코드는 실행하지 않는다 (git diff/show로 읽기만). 비밀값도 쓰지 않는다.
+on:
+  pull_request_target:
+    # labeled/unlabeled: `사람-확인` 라벨을 달거나 떼면 다시 판정
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: base 브랜치 체크아웃
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: PR head 커밋 가져오기 (실행하지 않음)
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/head:refs/remotes/pr/head"
+
+      - name: 가드 (base 대비 diff)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          start=$SECONDS
+          if bash .github/scripts/guard.sh "$BASE_SHA" "$HEAD_SHA"; then rc=0; else rc=$?; fi
+          echo "### 가드: exit $rc, $((SECONDS - start))초" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
