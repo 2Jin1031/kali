@@ -5,6 +5,7 @@
 - 형식과 수락 규칙: [0001](0001-adr-format-and-acceptance.md)
 - 새 ADR 초안: `/adr` (AI는 "제안"까지만, 수락은 사람)
 - "상태: 수락됨" ADR은 고치지 않는다. 바꾸려면 새 ADR을 제안하고, 수락되면 옛 ADR은 그대로 두고 새 ADR에서 "대체: 000N"으로 가리킨다
+- ADR을 수락하면 `.claude/settings.json` deny에 `Edit(/docs/adr/해당파일)` 한 줄을 추가한다 (빠뜨려도 CI 가드가 잡는다)
 
 | 번호 | 제목 | 상태 |
 |---|---|---|
@@ -16,3 +17,4 @@
 | 0006 | DB: MySQL 8 | 수락됨 |
 | 0007 | Java 25 / Spring Boot 4.1 / Gradle 9 + Kotlin DSL | 수락됨 |
 | 0008 | 저장소 구조와 공개 | 수락됨 |
+| 0009 | Gradle wrapper(gradlew)를 보호 경로에 추가 (0002 보완) | 수락됨 |

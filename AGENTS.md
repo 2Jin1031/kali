@@ -30,11 +30,11 @@ docs/adr/   확정된 결정. 작업 전 관련 ADR을 읽는다
 - **물어보고**: 의존성 추가, 빌드 설정, CI 설정, 공개 API 모양 변경, ADR 수락·변경, 스펙에 없는 도메인 규칙, 설계 선택지가 갈릴 때
 - **절대 금지**: main에 머지/push, force push, `terraform apply`/`destroy`, 비밀키·`.env` 접근, 검사 규칙을 약하게 바꿔 통과(테스트 삭제·`@Disabled` 포함), 수락된 ADR 수정
 
-보호 경로는 수정하지 않는다: `**/build.gradle.kts`, `settings.gradle.kts`, `gradle/`, `.github/`, `.claude/`, `AGENTS.md`, `CLAUDE.md`, `infra/`, 수락된 ADR. 바꿔야 하면 PR "내가 결정할 것"에 무엇을 왜 바꿔야 하는지 적는다. 물어볼 사람이 없을 때(밤 작업)도 같다.
+보호 경로는 수정하지 않는다: `**/build.gradle.kts`, `settings.gradle.kts`, `gradle/`, `gradlew`, `gradlew.bat`, `.github/`, `.claude/`, `AGENTS.md`, `CLAUDE.md`, `infra/`, 수락된 ADR. 바꿔야 하면 PR "내가 결정할 것"에 무엇을 왜 바꿔야 하는지 적는다. 물어볼 사람이 없을 때(밤 작업)도 같다.
 
 ### 완료 정의
 
-1. `./gradlew check` 통과 (작업을 끝내려 하면 Stop 훅이 `spotlessApply check`를 돌리고, 실패하면 끝나지 않는다)
+1. `./gradlew check` 통과. 작업을 끝내려 하면 Stop 훅이 `spotlessApply check`를 돌리고, 실패하면 한 번 막는다. 코드로 고칠 수 없는 원인(Docker 꺼짐 등)이면 고치려 하지 말고 PR "확인 못 한 것"과 사용자 보고에 실패 내용과 원인을 적고 끝낸다 (두 번째 종료 시도는 막히지 않는다)
 2. 새 동작마다 그 동작을 검증하는 테스트
 3. 리뷰 에이전트(`reviewer`)에 diff를 넘겨 검토받고 결과를 PR에 넣는다
 4. PR 본문은 `.github/pull_request_template.md` 6항목을 채운다. 검사 숫자는 정확한 커밋 SHA 기준. "확인 못 한 것"은 비우지 않는다
@@ -44,6 +44,7 @@ docs/adr/   확정된 결정. 작업 전 관련 ADR을 읽는다
 - 검사 규칙이 틀렸다고 생각해도 고치지 않는다. PR에 이유를 적는다
 - 버그는 재현 테스트를 먼저 쓰고(실패 확인) 고친다
 - 브랜치 이름: `claude/하이픈-이름` (예: `claude/post-list-api`). main에서 바로 작업하지 않는다
+- push는 `git push -u origin claude/…`처럼 브랜치 이름을 적는다. `git push`, `git push origin`, HEAD가 들어간 형태는 거부된다
 - 머지는 사람이 한다 (docs/adr/0003)
 - 계획·브레인스토밍 문서는 저장소에 두지 않는다. 확정된 결정만 ADR로
 
