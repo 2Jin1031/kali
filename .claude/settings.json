@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Edit(/**/build.gradle.kts)",
+      "Edit(/settings.gradle.kts)",
+      "Edit(/gradle/**)",
+      "Edit(/.github/**)",
+      "Edit(/.claude/**)",
+      "Edit(/AGENTS.md)",
+      "Edit(/CLAUDE.md)",
+      "Edit(/infra/**)",
+      "Edit(/docs/adr/0001-adr-format-and-acceptance.md)",
+      "Edit(/docs/adr/0002-permissions-and-protected-paths.md)",
+      "Edit(/docs/adr/0003-merge-authority.md)",
+      "Edit(/docs/adr/0004-db-migration-ownership.md)",
+      "Edit(/docs/adr/0005-view-technology.md)",
+      "Edit(/docs/adr/0006-database.md)",
+      "Edit(/docs/adr/0007-java-spring-gradle-versions.md)",
+      "Edit(/docs/adr/0008-repository-structure.md)",
+
+      "Read(/**/.env)",
+      "Read(/**/.env.*)",
+
+      "Bash(terraform *apply*)",
+      "Bash(terraform *destroy*)",
+
+      "Bash(git push)",
+      "Bash(git push *main*)",
+      "Bash(git push *--force*)",
+      "Bash(git push -f *)",
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)",
+      "Bash(git push * +*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-check.sh",
+            "timeout": 900,
+            "statusMessage": "./gradlew spotlessApply check"
+          }
+        ]
+      }
+    ]
+  }
+}
