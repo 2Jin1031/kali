@@ -32,7 +32,7 @@ name_status="$(git_ diff --name-status --find-renames "$BASE...$HEAD")"
 added_disabled="$(
   git_ diff --unified=0 "$BASE...$HEAD" \
     | awk '/^\+\+\+ /{file=substr($0,7); next}
-           /^\+.*@([A-Za-z_][A-Za-z0-9_]*\.)*Disabled/{print file "\t" substr($0,2)}'
+           /^\+.*@[[:space:]]*([A-Za-z_][A-Za-z0-9_]*[[:space:]]*\.[[:space:]]*)*Disabled/{print file "\t" substr($0,2)}'
 )"
 
 violations=()
@@ -56,7 +56,8 @@ is_accepted_adr_at_base() {
   local p="$1" content
   [[ "$p" == docs/adr/* ]] || return 1
   content="$(git_ show "$BASE:$p" 2>/dev/null)" || return 1
-  [[ "$content" == *"상태: 수락됨"* ]]
+  # 본문에 같은 글자가 있어도 안 되게, 줄 전체가 상태 표기인 경우만
+  grep -qE '^상태:[[:space:]]*수락됨[[:space:]]*$' <<<"$content"
 }
 
 # 1. 테스트 코드에 @Disabled 추가 (@DisabledIf..., 정규화된 이름 포함)
