@@ -4,6 +4,8 @@
     "deny": [
       "Edit(/**/build.gradle.kts)",
       "Edit(/settings.gradle.kts)",
+      "Edit(/gradlew)",
+      "Edit(/gradlew.bat)",
       "Edit(/gradle/**)",
       "Edit(/.github/**)",
       "Edit(/.claude/**)",
@@ -18,6 +20,7 @@
       "Edit(/docs/adr/0006-database.md)",
       "Edit(/docs/adr/0007-java-spring-gradle-versions.md)",
       "Edit(/docs/adr/0008-repository-structure.md)",
+      "Edit(/docs/adr/0009-protect-gradle-wrapper.md)",
 
       "Read(/**/.env)",
       "Read(/**/.env.*)",

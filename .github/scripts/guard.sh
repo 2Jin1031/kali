@@ -4,6 +4,7 @@
 #   2. 테스트 파일 삭제
 #   3. 보호 경로 변경
 #   4. docs/adr/ 의 "상태: 수락됨" ADR 수정·삭제
+#   5. ADR 수락 (추가된 줄에 "상태: 수락됨". 수락은 사람만 한다)
 # PR에 `사람-확인` 라벨이 있으면 경고만 하고 통과한다.
 # git 명령이 실패하면 통과시키지 않고 실패한다 (fail-closed).
 #
@@ -34,6 +35,13 @@ added_disabled="$(
     | awk '/^\+\+\+ /{file=substr($0,7); next}
            /^\+.*@[[:space:]]*([A-Za-z_][A-Za-z0-9_]*[[:space:]]*\.[[:space:]]*)*Disabled/{print file "\t" substr($0,2)}'
 )"
+# 줄 전체가 상태 표기인 경우만 (README 표의 "| 0009 | … | 수락됨 |" 같은 줄은 제외)
+added_acceptance="$(
+  git_ diff --unified=0 "$BASE...$HEAD" -- docs/adr/ \
+    | awk '/^\+\+\+ /{file=substr($0,7); next}
+           /^\+상태:[[:space:]]*수락됨[[:space:]]*$/{print file}' \
+    | sort -u
+)"
 
 violations=()
 
@@ -44,6 +52,7 @@ is_protected_path() {
   local p="$1"
   [[ "$p" == build.gradle.kts || "$p" == */build.gradle.kts ]] && return 0
   [[ "$p" == settings.gradle.kts ]] && return 0
+  [[ "$p" == gradlew || "$p" == gradlew.bat ]] && return 0
   [[ "$p" == gradle/* ]] && return 0
   [[ "$p" == .github/* ]] && return 0
   [[ "$p" == .claude/* ]] && return 0
@@ -65,6 +74,12 @@ while IFS=$'\t' read -r file line; do
   [[ -z "$file" ]] && continue
   is_test_path "$file" && violations+=("@Disabled 추가: $file: $line")
 done <<<"$added_disabled"
+
+# 5. ADR 수락 (새 파일을 수락됨으로 추가, 제안 → 수락됨 변경 모두)
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+  violations+=("ADR 수락(사람 확인 필요): $file")
+done <<<"$added_acceptance"
 
 # 2~4. 파일 단위 검사
 while IFS=$'\t' read -r status path1 path2; do
