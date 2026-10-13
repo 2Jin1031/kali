@@ -16,6 +16,7 @@ fi
 if [[ -z "${CLAUDE_PROJECT_DIR:-}" ]] || ! cd "$CLAUDE_PROJECT_DIR"; then
   echo "Stop 훅: 프로젝트 폴더로 이동 실패 (CLAUDE_PROJECT_DIR='${CLAUDE_PROJECT_DIR:-}'). 검사를 못 돌림" >&2
   $stop_hook_active && { echo "검사 실패 상태로 종료 허용" >&2; exit 0; }
+  echo "코드로 고칠 수 없는 원인이면 고치려 하지 말고, PR '확인 못 한 것'과 사용자 보고에 실패 내용과 원인을 적고 끝내라. 다음 종료 시도는 막지 않는다." >&2
   exit 2
 fi
 
