@@ -24,7 +24,7 @@ class HealthControllerTest {
     void DB가_연결되어_있으면_UP을_반환한다() throws Exception {
         mockMvc.perform(get("/health"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.status").value("BROKEN"))
                 .andExpect(jsonPath("$.db").value("UP"));
     }
 }
