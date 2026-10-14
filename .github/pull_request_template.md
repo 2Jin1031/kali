@@ -32,12 +32,15 @@ AI 머지 전환 (docs/adr/0003)
 - 세는 PR: main에 머지된 PR 중 `사람-확인` 라벨이 없는 것 (전환 후 AI가 머지하게 될 PR이 이 종류뿐). 아직 머지 전인 이번 PR은 세지 않는다
 - `사람-확인` 라벨이 있는 PR은 세지 않고, 연속 기록을 끊지도 않는다
 - 연속이 끊기는 경우: 세는 PR에 사람이 직접 고친 커밋(`Co-Authored-By: Claude` 트레일러가 없는 커밋)이 있을 때
+- GitHub "Update branch" 버튼으로 생긴 main 머지 커밋(부모 2개, committer `web-flow`, 메시지 `Merge branch 'main' into …`)은 사람이 고친 커밋으로 세지 않는다. 웹 "Resolve conflicts"로 사람이 충돌을 해결한 머지 커밋도 모양이 같으므로 명령 2-1로 가른다
 - N/10 = 마지막으로 끊긴 PR 이후 세는 PR의 수
 
   1. 세는 PR 목록 (머지 순서)
      gh pr list --state merged --base main --limit 100 --json number,labels,mergedAt --jq '[.[] | select([.labels[].name] | index("사람-확인") | not)] | sort_by(.mergedAt) | map(.number)'
-  2. PR마다 사람이 고친 커밋 수 (0이 아니면 연속이 끊김)
-     gh pr view <번호> --json commits --jq '[.commits[] | select((.messageBody | test("Co-Authored-By: Claude"; "i")) | not)] | length'
+  2. PR마다 사람이 고친 커밋 수 (0이 아니면 연속이 끊김. Update branch 모양의 머지 커밋은 뺀다. 커밋 100개까지)
+     gh api "repos/{owner}/{repo}/pulls/<번호>/commits?per_page=100" --jq '[.[] | select(.commit.message | test("Co-Authored-By: Claude"; "i") | not) | select(((.parents | length) > 1 and .committer.login == "web-flow" and (.commit.message | test("^Merge branch .main. into "))) | not)] | length'
+  2-1. 명령 2에서 뺀 머지 커밋마다 트리를 자동 머지 결과와 비교 ("다름"이면 사람이 충돌을 해결한 커밋이라 연속이 끊김. git 2.38 이상)
+     for m in $(gh api "repos/{owner}/{repo}/pulls/<번호>/commits?per_page=100" --jq '.[] | select((.parents | length) > 1 and .committer.login == "web-flow" and (.commit.message | test("^Merge branch .main. into "))) | .sha'); do git fetch -q origin "$m"; [ "$(git merge-tree --write-tree "$m^1" "$m^2" | head -1)" = "$(git rev-parse "$m^{tree}")" ] && echo "${m:0:7} 같음" || echo "${m:0:7} 다름"; done
 
 실제 실패를 잡은 사례
 - 세는 PR에서 CI `check`가 중간 커밋에서 실패했다가 뒤 커밋에서 고쳐진 경우, 또는 그 세션에서 Stop 훅이 실패를 막은 경우
