@@ -73,6 +73,8 @@ PR 본문은 머지하는 사람이 diff를 다 읽지 않고 머지 여부를 �
 ## 코드 규칙
 
 - 포맷은 Spotless(palantir-java-format)가 정한다. 손으로 맞추지 않는다
+- DB 접근 ([ADR 0012](docs/adr/0012-persistence-and-migration.md)): `infra`의 저장소 구현에서 `JdbcClient`로 SQL을 직접 쓴다. `domain`에는 영속성 애너테이션·Spring 의존을 두지 않는다
+- 스키마는 Flyway 마이그레이션 파일(`app/src/main/resources/db/migration/V<번호>__<설명>.sql`)로만 바꾼다. 첫 배포 뒤에는 적용된 파일을 고치지 않고 새 버전을 더한다 (첫 배포 전은 ADR 0004)
 - 테스트에서 DB가 필요하면 `kali.TestcontainersConfiguration`을 `@Import`한다. 메모리 DB(H2)로 대체하지 않는다
 - 테스트 메서드 이름은 한글로 동작을 쓴다 (예: `DB가_연결되어_있으면_UP을_반환한다`)
 - 패키지 구조 ([ADR 0011](docs/adr/0011-package-structure.md)): 기능별 패키지 `kali.<기능>` 안의 `web`, `application`, `domain`, `infra` 중 하나에 둔다. 루트에는 `KaliApplication`만, 여러 기능이 함께 쓰는 것은 `kali.common`에 둔다
