@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HealthController {
 
-    private final JdbcTemplate jdbcTemplate;
+          private final JdbcTemplate jdbcTemplate;
 
     public HealthController(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
