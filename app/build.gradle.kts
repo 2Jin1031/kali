@@ -1,4 +1,5 @@
 plugins {
+// 깨보기 4: 보호 경로 수정
     java
     id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
