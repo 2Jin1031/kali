@@ -2,7 +2,8 @@
 # 가드: PR의 base 대비 diff에서 "사람 판단이 필요한 변경"을 찾는다.
 #   1. 테스트 코드에 @Disabled 추가
 #   2. 테스트 파일 삭제
-#   3. 보호 경로 변경
+#   3. 보호 경로 변경: **/build.gradle.kts, settings.gradle.kts, gradle/, gradlew, gradlew.bat,
+#      .github/, .claude/, AGENTS.md, CLAUDE.md, infra/, docs/spec/
 #   4. docs/adr/ 의 "상태: 수락됨" ADR 수정·삭제
 #   5. ADR 수락 (추가된 줄에 "상태: 수락됨". 수락은 사람만 한다)
 # PR에 `사람-확인` 라벨이 있으면 경고만 하고 통과한다.
@@ -58,6 +59,7 @@ is_protected_path() {
   [[ "$p" == .claude/* ]] && return 0
   [[ "$p" == AGENTS.md || "$p" == CLAUDE.md ]] && return 0
   [[ "$p" == infra/* ]] && return 0
+  [[ "$p" == docs/spec/* ]] && return 0
   return 1
 }
 
