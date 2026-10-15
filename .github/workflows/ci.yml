@@ -18,6 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: 가드 시나리오 테스트
+        run: bash .github/scripts/guard-test.sh
+
       - uses: actions/setup-java@v6
         with:
           distribution: corretto
