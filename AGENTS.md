@@ -31,7 +31,7 @@ docs/spec/  도메인 스펙 (보호 경로). 엔티티·기능 작업 전에 �
 - **물어보고**: 의존성 추가, 빌드 설정, CI 설정, 공개 API 모양 변경, ADR 수락·변경, 스펙에 없는 도메인 규칙, 설계 선택지가 갈릴 때
 - **절대 금지**: main에 머지/push, force push, `terraform apply`/`destroy`, 비밀키·`.env` 접근, 검사 규칙을 약하게 바꿔 통과(테스트 삭제·`@Disabled` 포함), 수락된 ADR 수정
 
-보호 경로는 수정하지 않는다: `**/build.gradle.kts`, `settings.gradle.kts`, `gradle/`, `gradlew`, `gradlew.bat`, `.github/`, `.claude/`, `AGENTS.md`, `CLAUDE.md`, `infra/`, `docs/spec/`, 수락된 ADR. 바꿔야 하면 PR "내가 결정할 것"에 무엇을 왜 바꿔야 하는지 적는다. 물어볼 사람이 없을 때(밤 작업)도 같다.
+보호 경로는 수정하지 않는다: `**/build.gradle.kts`, `settings.gradle.kts`, `gradle/`, `gradlew`, `gradlew.bat`, `.github/`, `.claude/`, `AGENTS.md`, `CLAUDE.md`, `infra/`, `docs/spec/`, 수락된 ADR. 바꿔야 하면 PR "내가 결정할 것"에 무엇을 왜 바꿔야 하는지 적는다. 사람 없이 혼자 작업해 물어볼 수 없을 때도 같다.
 
 ### 완료 정의
 
