@@ -24,6 +24,7 @@
       "Edit(/docs/adr/0009-protect-gradle-wrapper.md)",
       "Edit(/docs/adr/0010-domain-spec-location.md)",
       "Edit(/docs/adr/0011-package-structure.md)",
+      "Edit(/docs/adr/0012-persistence-and-migration.md)",
 
       "Read(/**/.env)",
       "Read(/**/.env.*)",
