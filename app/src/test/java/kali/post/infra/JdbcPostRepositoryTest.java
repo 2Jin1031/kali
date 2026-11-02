@@ -182,6 +182,27 @@ class JdbcPostRepositoryTest {
     }
 
     @Test
+    void 자기_옛_slug로_돌아간_글을_저장하고_두_slug로_찾는다() {
+        Post post = post(UUID.randomUUID(), "winset");
+        repository.save(post);
+        post.revise(
+                new PostContent("윈셋", new Slug("winset-2"), "본문", Summary.manual("요약"), null, "notes/winset.md"),
+                new ContentHash("hash-2", 1),
+                LATER);
+        repository.save(post);
+
+        post.revise(
+                new PostContent("윈셋", new Slug("winset"), "본문", Summary.manual("요약"), null, "notes/winset.md"),
+                new ContentHash("hash-3", 1),
+                LATER);
+        repository.save(post);
+
+        Post found = repository.findBySlug(new Slug("winset-2")).orElseThrow();
+        assertThat(found.slug()).isEqualTo(new Slug("winset"));
+        assertThat(found.previousSlugs()).containsExactly(new Slug("winset-2"));
+    }
+
+    @Test
     void 없는_slug로는_글을_찾지_못한다() {
         assertThat(repository.findBySlug(new Slug("nothing"))).isEmpty();
     }

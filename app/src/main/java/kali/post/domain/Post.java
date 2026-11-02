@@ -160,9 +160,8 @@ public class Post {
         if (slug.equals(newSlug)) {
             return;
         }
-        if (previousSlugs.contains(newSlug)) {
-            throw new IllegalStateException("글이 자기 옛 slug로 돌아가는 경우의 처리는 스펙 미정 G다: " + newSlug.value());
-        }
+        // 자기 옛 slug로 돌아가면 그 slug가 지금 slug가 되고, 바로 전 slug는 옛 slug 기록으로 옮긴다
+        previousSlugs.remove(newSlug);
         previousSlugs.add(slug);
         slug = newSlug;
     }

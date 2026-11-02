@@ -101,13 +101,14 @@ class PostTest {
     }
 
     @Test
-    void 자기_옛_slug로_돌아가는_것은_미정이라_거부한다() {
+    void 자기_옛_slug로_돌아가면_받아들이고_바로_전_slug를_옛_slug로_옮긴다() {
         Post post = published();
         post.revise(content("winset-2"), new ContentHash("hash-2", 1), LATER);
 
-        assertThatThrownBy(() -> post.revise(content("winset"), new ContentHash("hash-3", 1), LATER))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("미정 G");
+        post.revise(content("winset"), new ContentHash("hash-3", 1), LATER);
+
+        assertThat(post.slug()).isEqualTo(new Slug("winset"));
+        assertThat(post.previousSlugs()).containsExactly(new Slug("winset-2"));
     }
 
     @Test
