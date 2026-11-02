@@ -3,6 +3,7 @@ package kali.post.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -66,5 +67,27 @@ class PostValueTest {
     @Test
     void 해시_방식_버전은_1_이상이다() {
         assertThatThrownBy(() -> new ContentHash("hash", 0)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void id는_대문자가_섞여도_소문자_UUID와_같은_글이다() {
+        assertThat(PostId.parse("0B6F2C1E-6A4D-4A8E-9C1F-2D3E4F5A6B7C"))
+                .isEqualTo(PostId.parse("0b6f2c1e-6a4d-4a8e-9c1f-2d3e4f5a6b7c"))
+                .isEqualTo(UUID.fromString("0b6f2c1e-6a4d-4a8e-9c1f-2d3e4f5a6b7c"));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(
+            strings = {
+                "",
+                "1-2-3-4-5",
+                "0b6f2c1e6a4d4a8e9c1f2d3e4f5a6b7c",
+                "0b6f2c1e-6a4d-4a8e-9c1f-2d3e4f5a6b7",
+                "g b6f2c1e-6a4d-4a8e-9c1f-2d3e4f5a6b7c",
+                " 0b6f2c1e-6a4d-4a8e-9c1f-2d3e4f5a6b7c"
+            })
+    void id가_UUID_형식이_아니면_거부한다(String value) {
+        assertThatThrownBy(() -> PostId.parse(value)).isInstanceOf(IllegalArgumentException.class);
     }
 }
