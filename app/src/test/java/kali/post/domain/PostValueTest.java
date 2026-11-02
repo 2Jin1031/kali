@@ -31,8 +31,8 @@ class PostValueTest {
 
     @ParameterizedTest
     @NullSource
-    @ValueSource(strings = {""})
-    void title이_없거나_비어_있으면_확장자를_뺀_파일_이름을_제목으로_쓴다(String title) {
+    @ValueSource(strings = {"", "   ", "\t"})
+    void title이_없거나_비어_있거나_공백만_있으면_확장자를_뺀_파일_이름을_제목으로_쓴다(String title) {
         assertThat(PostTitle.resolve(title, "concepts/윈셋.md")).isEqualTo("윈셋");
     }
 
@@ -42,10 +42,8 @@ class PostValueTest {
     }
 
     @Test
-    void 공백만_있는_title은_미정이라_거부한다() {
-        assertThatThrownBy(() -> PostTitle.resolve("   ", "notes/윈셋.md"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("미정 L");
+    void title의_앞뒤_공백은_지운다() {
+        assertThat(PostTitle.resolve("  윈셋이란  ", "notes/윈셋.md")).isEqualTo("윈셋이란");
     }
 
     @Test
