@@ -135,15 +135,18 @@ class JdbcPostRepositoryTest {
     }
 
     @Test
-    void 해시_방식만_바뀌면_해시만_저장하고_수정_시각은_그대로다() {
+    void 해시_방식이_바뀌면_다시_쓴_내용과_해시를_저장하고_수정_시각은_그대로다() {
         Post post = post(UUID.randomUUID(), "winset");
         repository.save(post);
 
-        post.rehash(new ContentHash("hash-v2", 2));
+        post.rehash(
+                new PostContent("윈셋", new Slug("winset"), "다시 쓴 본문", Summary.manual("요약"), null, "notes/winset.md"),
+                new ContentHash("hash-v2", 2));
         repository.save(post);
 
         Post found = repository.findById(post.id()).orElseThrow();
         assertThat(found.contentHash()).isEqualTo(new ContentHash("hash-v2", 2));
+        assertThat(found.body()).isEqualTo("다시 쓴 본문");
         assertThat(found.contentUpdatedAt()).isEqualTo(PUBLISHED_AT);
     }
 

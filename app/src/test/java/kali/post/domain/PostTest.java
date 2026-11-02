@@ -112,31 +112,37 @@ class PostTest {
     }
 
     @Test
-    void 해시_방식이_다른_해시로_내용을_반영하는_것은_미정이라_거부한다() {
-        Post post = published();
-
-        assertThatThrownBy(() -> post.revise(content("winset"), new ContentHash("hash-v2", 2), LATER))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("미정 P");
-    }
-
-    @Test
-    void 해시_방식만_바뀌면_해시만_바꾸고_수정_시각은_그대로다() {
+    void 해시_방식이_다른_해시를_받으면_내용과_해시를_다시_쓰고_수정_시각은_그대로다() {
         Post post = published();
         ContentHash v2 = new ContentHash("hash-v2", 2);
 
-        post.rehash(v2);
+        boolean revised = post.revise(content("winset-2"), v2, LATER);
+
+        assertThat(revised).isTrue();
+        assertThat(post.contentHash()).isEqualTo(v2);
+        assertThat(post.slug()).isEqualTo(new Slug("winset-2"));
+        assertThat(post.contentUpdatedAt()).isEqualTo(PUBLISHED_AT);
+    }
+
+    @Test
+    void rehash는_내용과_해시를_노트대로_다시_쓰고_수정_시각은_그대로다() {
+        Post post = published();
+        ContentHash v2 = new ContentHash("hash-v2", 2);
+        PostContent rewritten =
+                new PostContent("윈셋", new Slug("winset"), "이미지 경로를 다시 쓴 본문", Summary.manual("요약"), null, "notes/윈셋.md");
+
+        post.rehash(rewritten, v2);
 
         assertThat(post.contentHash()).isEqualTo(v2);
+        assertThat(post.body()).isEqualTo("이미지 경로를 다시 쓴 본문");
         assertThat(post.contentUpdatedAt()).isEqualTo(PUBLISHED_AT);
-        assertThat(post.title()).isEqualTo("윈셋");
     }
 
     @Test
     void 해시_방식이_같으면_rehash를_거부한다() {
         Post post = published();
 
-        assertThatThrownBy(() -> post.rehash(new ContentHash("hash-2", 1)))
+        assertThatThrownBy(() -> post.rehash(content("winset"), new ContentHash("hash-2", 1)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
