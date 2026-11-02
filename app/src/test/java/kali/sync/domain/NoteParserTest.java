@@ -193,4 +193,15 @@ class NoteParserTest {
         assertThat(skipReason(with("title", "가".repeat(256)), "본문")).contains("255");
         assertThat(skipReason(with("tags", List.of("가".repeat(101))), "본문")).contains("100");
     }
+
+    @Test
+    void 상대_경로_이미지는_노트_폴더_기준으로_먼저_찾는다() {
+        NoteParser parser = new NoteParser(
+                new ImageResolver(List.of("글/a.png", "다른/a.png", "image/b.png", "글/image/b.png")),
+                key -> "https://img/" + key);
+
+        PostDraft draft = parser.parse(Note.of("글/x.md", fm(), "![](a.png) ![](../image/b.png) ![](./image/b.png)"));
+
+        assertThat(draft.images()).containsOnlyKeys("글/a.png", "image/b.png", "글/image/b.png");
+    }
 }

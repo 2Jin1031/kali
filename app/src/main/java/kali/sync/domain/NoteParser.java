@@ -55,7 +55,7 @@ public final class NoteParser {
             String body = note.body().replace("\r\n", "\n").replace('\r', '\n');
             Map<String, String> found = new LinkedHashMap<>();
             for (ImageEmbeds.Embed embed : ImageEmbeds.find(body)) {
-                found.putIfAbsent(embed.target(), images.resolve(embed.target()));
+                found.putIfAbsent(embed.target(), images.resolve(embed.target(), note.path()));
             }
             String storedBody = ImageEmbeds.rewrite(body, target -> imageUrl.apply(found.get(target)));
             String manualSummary = string(fm.get("summary"), "summary");
