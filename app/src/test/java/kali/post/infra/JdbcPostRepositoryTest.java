@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import kali.TestcontainersConfiguration;
 import kali.post.domain.ContentHash;
@@ -15,6 +16,7 @@ import kali.post.domain.PostStatus;
 import kali.post.domain.Slug;
 import kali.post.domain.SlugAlreadyUsedException;
 import kali.post.domain.Summary;
+import kali.post.domain.Tag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,7 @@ class JdbcPostRepositoryTest {
 
     @BeforeEach
     void 테이블을_비운다() {
+        jdbcClient.sql("DELETE FROM post_tag").update();
         jdbcClient.sql("DELETE FROM post_slug").update();
         jdbcClient.sql("DELETE FROM post").update();
     }
@@ -135,15 +138,18 @@ class JdbcPostRepositoryTest {
     }
 
     @Test
-    void 해시_방식만_바뀌면_해시만_저장하고_수정_시각은_그대로다() {
+    void 해시_방식이_바뀌면_다시_쓴_내용과_해시를_저장하고_수정_시각은_그대로다() {
         Post post = post(UUID.randomUUID(), "winset");
         repository.save(post);
 
-        post.rehash(new ContentHash("hash-v2", 2));
+        post.rehash(
+                new PostContent("윈셋", new Slug("winset"), "다시 쓴 본문", Summary.manual("요약"), null, "notes/winset.md"),
+                new ContentHash("hash-v2", 2));
         repository.save(post);
 
         Post found = repository.findById(post.id()).orElseThrow();
         assertThat(found.contentHash()).isEqualTo(new ContentHash("hash-v2", 2));
+        assertThat(found.body()).isEqualTo("다시 쓴 본문");
         assertThat(found.contentUpdatedAt()).isEqualTo(PUBLISHED_AT);
     }
 
@@ -179,6 +185,27 @@ class JdbcPostRepositoryTest {
         assertThat(byOld.previousSlugs()).containsExactly(new Slug("winset"));
         assertThat(repository.findBySlug(new Slug("winset-2")).orElseThrow().id())
                 .isEqualTo(post.id());
+    }
+
+    @Test
+    void 자기_옛_slug로_돌아간_글을_저장하고_두_slug로_찾는다() {
+        Post post = post(UUID.randomUUID(), "winset");
+        repository.save(post);
+        post.revise(
+                new PostContent("윈셋", new Slug("winset-2"), "본문", Summary.manual("요약"), null, "notes/winset.md"),
+                new ContentHash("hash-2", 1),
+                LATER);
+        repository.save(post);
+
+        post.revise(
+                new PostContent("윈셋", new Slug("winset"), "본문", Summary.manual("요약"), null, "notes/winset.md"),
+                new ContentHash("hash-3", 1),
+                LATER);
+        repository.save(post);
+
+        Post found = repository.findBySlug(new Slug("winset-2")).orElseThrow();
+        assertThat(found.slug()).isEqualTo(new Slug("winset"));
+        assertThat(found.previousSlugs()).containsExactly(new Slug("winset-2"));
     }
 
     @Test
@@ -275,5 +302,71 @@ class JdbcPostRepositoryTest {
         assertThat(found.slug()).isEqualTo(new Slug("winset"));
         assertThat(found.contentHash()).isEqualTo(new ContentHash("hash-1", 1));
         assertThat(found.previousSlugs()).isEmpty();
+    }
+
+    @Test
+    void 태그를_저장하고_이름순으로_읽는다() {
+        Post post = Post.publish(
+                UUID.randomUUID(),
+                new PostContent(
+                        "윈셋",
+                        new Slug("winset"),
+                        "본문",
+                        Summary.manual("요약"),
+                        null,
+                        "notes/winset.md",
+                        List.of(new Tag("spring"), new Tag("db"), new Tag("책/지대넓"))),
+                new ContentHash("hash-1", 1),
+                PUBLISHED_AT);
+
+        repository.save(post);
+
+        assertThat(repository.findById(post.id()).orElseThrow().tags())
+                .containsExactly(new Tag("db"), new Tag("spring"), new Tag("책/지대넓"));
+    }
+
+    @Test
+    void 내용이_바뀌면_태그를_통째로_다시_쓴다() {
+        Post post = Post.publish(
+                UUID.randomUUID(),
+                new PostContent(
+                        "윈셋",
+                        new Slug("winset"),
+                        "본문",
+                        Summary.manual("요약"),
+                        null,
+                        "notes/winset.md",
+                        List.of(new Tag("db"))),
+                new ContentHash("hash-1", 1),
+                PUBLISHED_AT);
+        repository.save(post);
+
+        post.revise(
+                new PostContent(
+                        "윈셋",
+                        new Slug("winset"),
+                        "본문",
+                        Summary.manual("요약"),
+                        null,
+                        "notes/winset.md",
+                        List.of(new Tag("spring"))),
+                new ContentHash("hash-2", 1),
+                LATER);
+        repository.save(post);
+
+        assertThat(repository.findById(post.id()).orElseThrow().tags()).containsExactly(new Tag("spring"));
+    }
+
+    @Test
+    void 상태와_상관없이_모든_글을_읽는다() {
+        Post published = post(UUID.randomUUID(), "winset");
+        Post unpublished = post(UUID.randomUUID(), "other");
+        unpublished.unpublish();
+        repository.save(published);
+        repository.save(unpublished);
+
+        assertThat(repository.findAll())
+                .extracting(Post::id)
+                .containsExactlyInAnyOrder(published.id(), unpublished.id());
     }
 }

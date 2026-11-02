@@ -8,19 +8,15 @@ public final class PostTitle {
     private PostTitle() {}
 
     /**
-     * frontmatter {@code title}이 없거나 비어 있으면 파일 이름(확장자 제외)을 제목으로 쓴다.
-     *
-     * @throws IllegalArgumentException {@code title}이 공백만 있을 때. 이 경우의 처리는 스펙 미정 L이다
+     * frontmatter {@code title}이 없거나 비어 있거나 공백만 있으면 파일 이름(확장자 제외)을 제목으로 쓴다. 앞뒤 공백은 지운다.
+     * {@code title}이 문자열이 아닌 노트는 동기화가 건너뛴다.
      */
     public static String resolve(String frontmatterTitle, String sourcePath) {
         Objects.requireNonNull(sourcePath, "sourcePath");
-        if (frontmatterTitle == null || frontmatterTitle.isEmpty()) {
-            return fileNameWithoutExtension(sourcePath);
+        if (frontmatterTitle == null || frontmatterTitle.isBlank()) {
+            return fileNameWithoutExtension(sourcePath).strip();
         }
-        if (frontmatterTitle.isBlank()) {
-            throw new IllegalArgumentException("공백만 있는 title의 처리는 스펙 미정 L이다: " + sourcePath);
-        }
-        return frontmatterTitle;
+        return frontmatterTitle.strip();
     }
 
     private static String fileNameWithoutExtension(String sourcePath) {

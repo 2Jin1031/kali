@@ -1,5 +1,5 @@
 -- 글 (docs/spec/domain.md 3~6절). 시각 칸은 모두 UTC로 저장한다.
--- 태그, 대표 여부·순서는 스펙 미정이라 아직 칸을 두지 않는다.
+-- 대표 여부·순서는 스펙 미정이라 아직 칸을 두지 않는다.
 CREATE TABLE post (
     id                   CHAR(36)      NOT NULL COMMENT 'frontmatter id (UUID)',
     slug                 VARCHAR(200)  NOT NULL COMMENT '지금 slug',
@@ -26,4 +26,14 @@ CREATE TABLE post_slug (
     PRIMARY KEY (slug),
     KEY idx_post_slug_post_id (post_id),
     CONSTRAINT fk_post_slug_post FOREIGN KEY (post_id) REFERENCES post (id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+
+-- 글의 태그 (6. 글 속성의 태그). 동기화가 소문자로 바꿔 넣는다.
+-- 이름 비교는 바이트 그대로 한다 (기본 정렬 규칙 ai_ci는 'é'와 'e'를 같은 값으로 본다)
+CREATE TABLE post_tag (
+    post_id CHAR(36)     NOT NULL,
+    name    VARCHAR(100) NOT NULL COLLATE utf8mb4_0900_bin,
+    PRIMARY KEY (post_id, name),
+    KEY idx_post_tag_name (name),
+    CONSTRAINT fk_post_tag_post FOREIGN KEY (post_id) REFERENCES post (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;

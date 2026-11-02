@@ -19,6 +19,9 @@ public record Summary(String text, Source source) {
         if (source == Source.MANUAL && text.isBlank()) {
             throw new IllegalArgumentException("직접 쓴 요약은 비어 있을 수 없다. 비어 있으면 자동 요약을 쓴다");
         }
+        if (source == Source.MANUAL) {
+            Lengths.requireUtf8Bytes("직접 쓴 요약", text, Lengths.MANUAL_SUMMARY_BYTES);
+        }
     }
 
     public static Summary manual(String text) {

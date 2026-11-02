@@ -27,6 +27,7 @@ class PostMigrationTest {
 
     @BeforeEach
     void 테이블을_비운다() {
+        jdbcClient.sql("DELETE FROM post_tag").update();
         jdbcClient.sql("DELETE FROM post_slug").update();
         jdbcClient.sql("DELETE FROM post").update();
     }
@@ -39,7 +40,7 @@ class PostMigrationTest {
                 .sql("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()")
                 .query(String.class)
                 .list();
-        assertThat(tables).contains("post", "post_slug");
+        assertThat(tables).contains("post", "post_slug", "post_tag");
     }
 
     @Test

@@ -101,41 +101,48 @@ class PostTest {
     }
 
     @Test
-    void 자기_옛_slug로_돌아가는_것은_미정이라_거부한다() {
+    void 자기_옛_slug로_돌아가면_받아들이고_바로_전_slug를_옛_slug로_옮긴다() {
         Post post = published();
         post.revise(content("winset-2"), new ContentHash("hash-2", 1), LATER);
 
-        assertThatThrownBy(() -> post.revise(content("winset"), new ContentHash("hash-3", 1), LATER))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("미정 G");
+        post.revise(content("winset"), new ContentHash("hash-3", 1), LATER);
+
+        assertThat(post.slug()).isEqualTo(new Slug("winset"));
+        assertThat(post.previousSlugs()).containsExactly(new Slug("winset-2"));
     }
 
     @Test
-    void 해시_방식이_다른_해시로_내용을_반영하는_것은_미정이라_거부한다() {
-        Post post = published();
-
-        assertThatThrownBy(() -> post.revise(content("winset"), new ContentHash("hash-v2", 2), LATER))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("미정 P");
-    }
-
-    @Test
-    void 해시_방식만_바뀌면_해시만_바꾸고_수정_시각은_그대로다() {
+    void 해시_방식이_다른_해시를_받으면_내용과_해시를_다시_쓰고_수정_시각은_그대로다() {
         Post post = published();
         ContentHash v2 = new ContentHash("hash-v2", 2);
 
-        post.rehash(v2);
+        boolean revised = post.revise(content("winset-2"), v2, LATER);
+
+        assertThat(revised).isTrue();
+        assertThat(post.contentHash()).isEqualTo(v2);
+        assertThat(post.slug()).isEqualTo(new Slug("winset-2"));
+        assertThat(post.contentUpdatedAt()).isEqualTo(PUBLISHED_AT);
+    }
+
+    @Test
+    void rehash는_내용과_해시를_노트대로_다시_쓰고_수정_시각은_그대로다() {
+        Post post = published();
+        ContentHash v2 = new ContentHash("hash-v2", 2);
+        PostContent rewritten =
+                new PostContent("윈셋", new Slug("winset"), "이미지 경로를 다시 쓴 본문", Summary.manual("요약"), null, "notes/윈셋.md");
+
+        post.rehash(rewritten, v2);
 
         assertThat(post.contentHash()).isEqualTo(v2);
+        assertThat(post.body()).isEqualTo("이미지 경로를 다시 쓴 본문");
         assertThat(post.contentUpdatedAt()).isEqualTo(PUBLISHED_AT);
-        assertThat(post.title()).isEqualTo("윈셋");
     }
 
     @Test
     void 해시_방식이_같으면_rehash를_거부한다() {
         Post post = published();
 
-        assertThatThrownBy(() -> post.rehash(new ContentHash("hash-2", 1)))
+        assertThatThrownBy(() -> post.rehash(content("winset"), new ContentHash("hash-2", 1)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -180,14 +187,16 @@ class PostTest {
     }
 
     @Test
-    void 내용_해시가_같으면_노트_경로만_바뀌어도_그대로_둔다() {
+    void 내용_해시가_같아도_노트_경로는_바꾸고_수정_시각은_그대로다() {
         Post post = published();
         PostContent moved =
                 new PostContent("윈셋", new Slug("winset"), "본문", Summary.manual("요약"), null, "concepts/윈셋.md");
 
-        post.revise(moved, HASH, LATER);
+        boolean revised = post.revise(moved, HASH, LATER);
 
-        assertThat(post.sourcePath()).isEqualTo("notes/윈셋.md");
+        assertThat(revised).isFalse();
+        assertThat(post.sourcePath()).isEqualTo("concepts/윈셋.md");
+        assertThat(post.contentUpdatedAt()).isEqualTo(PUBLISHED_AT);
     }
 
     @Test
@@ -204,7 +213,25 @@ class PostTest {
                         PUBLISHED_AT,
                         PUBLISHED_AT,
                         HASH,
-                        "notes/윈셋.md"))
+                        "notes/윈셋.md",
+                        java.util.List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void 내용이_바뀌면_태그도_바꾼다() {
+        Post post = published();
+        PostContent tagged = new PostContent(
+                "윈셋",
+                new Slug("winset"),
+                "본문",
+                Summary.manual("요약"),
+                null,
+                "notes/윈셋.md",
+                java.util.List.of(new Tag("db")));
+
+        post.revise(tagged, new ContentHash("hash-2", 1), LATER);
+
+        assertThat(post.tags()).containsExactly(new Tag("db"));
     }
 }
