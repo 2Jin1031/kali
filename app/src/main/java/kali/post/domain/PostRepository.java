@@ -1,5 +1,6 @@
 package kali.post.domain;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,6 +14,9 @@ public interface PostRepository {
     void save(Post post);
 
     Optional<Post> findById(UUID id);
+
+    /** 상태와 상관없이 모든 글. 동기화가 이번 발행 대상에 없는 글을 찾을 때 쓴다. */
+    List<Post> findAll();
 
     /** 지금 slug나 옛 slug로 글을 찾는다. 옛 slug로 찾았는지는 {@link Post#slug()}와 비교해 안다. */
     Optional<Post> findBySlug(Slug slug);

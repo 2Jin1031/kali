@@ -213,7 +213,25 @@ class PostTest {
                         PUBLISHED_AT,
                         PUBLISHED_AT,
                         HASH,
-                        "notes/윈셋.md"))
+                        "notes/윈셋.md",
+                        java.util.List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void 내용이_바뀌면_태그도_바꾼다() {
+        Post post = published();
+        PostContent tagged = new PostContent(
+                "윈셋",
+                new Slug("winset"),
+                "본문",
+                Summary.manual("요약"),
+                null,
+                "notes/윈셋.md",
+                java.util.List.of(new Tag("db")));
+
+        post.revise(tagged, new ContentHash("hash-2", 1), LATER);
+
+        assertThat(post.tags()).containsExactly(new Tag("db"));
     }
 }

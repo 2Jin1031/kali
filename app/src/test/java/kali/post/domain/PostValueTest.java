@@ -88,4 +88,47 @@ class PostValueTest {
     void id가_UUID_형식이_아니면_거부한다(String value) {
         assertThatThrownBy(() -> PostId.parse(value)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SQL", "#sql", "  sql ", "#Sql"})
+    void 태그는_앞뒤_공백과_앞의_샵을_떼고_소문자로_읽는다(String raw) {
+        assertThat(Tag.parse(raw)).contains(new Tag("sql"));
+    }
+
+    @Test
+    void 중첩_태그는_슬래시까지_포함한_이름_하나다() {
+        assertThat(Tag.parse("책/지대넓")).contains(new Tag("책/지대넓"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "#"})
+    void 떼고_나서_빈_태그는_무시한다(String raw) {
+        assertThat(Tag.parse(raw)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"책 공부", "a\tb"})
+    void 공백이_든_태그는_거부한다(String raw) {
+        assertThatThrownBy(() -> Tag.parse(raw)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void 태그는_100자까지_받고_넘으면_거부한다() {
+        assertThat(Tag.parse("가".repeat(100))).isPresent();
+        assertThatThrownBy(() -> Tag.parse("가".repeat(101))).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void 글_내용의_태그는_중복을_빼고_이름순이다() {
+        PostContent content = new PostContent(
+                "윈셋",
+                new Slug("winset"),
+                "본문",
+                Summary.manual("요약"),
+                null,
+                "notes/윈셋.md",
+                java.util.List.of(new Tag("spring"), new Tag("db"), new Tag("spring")));
+
+        assertThat(content.tags()).containsExactly(new Tag("db"), new Tag("spring"));
+    }
 }

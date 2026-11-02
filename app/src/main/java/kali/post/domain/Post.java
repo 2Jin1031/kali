@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -26,6 +27,7 @@ public class Post {
     private Slug slug;
     private String title;
     private String body;
+    private List<Tag> tags;
     private Summary summary;
     private LocalDate displayDate;
     private PostStatus status;
@@ -44,7 +46,8 @@ public class Post {
             Instant firstPublishedAt,
             Instant contentUpdatedAt,
             ContentHash contentHash,
-            String sourcePath) {
+            String sourcePath,
+            List<Tag> tags) {
         this.id = Objects.requireNonNull(id, "id");
         this.slug = Objects.requireNonNull(slug, "slug");
         this.previousSlugs = new LinkedHashSet<>(previousSlugs);
@@ -57,6 +60,7 @@ public class Post {
         this.contentUpdatedAt = Objects.requireNonNull(contentUpdatedAt, "contentUpdatedAt");
         this.contentHash = Objects.requireNonNull(contentHash, "contentHash");
         this.sourcePath = Objects.requireNonNull(sourcePath, "sourcePath");
+        this.tags = PostContent.sortedUnique(tags);
         if (this.previousSlugs.contains(slug)) {
             throw new IllegalArgumentException("지금 slug가 옛 slug 목록에 있다: " + slug.value());
         }
@@ -76,7 +80,8 @@ public class Post {
                 now,
                 now,
                 hash,
-                content.sourcePath());
+                content.sourcePath(),
+                content.tags());
     }
 
     /** 저장소에서 읽은 값으로 글을 되살린다. */
@@ -92,7 +97,8 @@ public class Post {
             Instant firstPublishedAt,
             Instant contentUpdatedAt,
             ContentHash contentHash,
-            String sourcePath) {
+            String sourcePath,
+            List<Tag> tags) {
         return new Post(
                 id,
                 slug,
@@ -105,7 +111,8 @@ public class Post {
                 firstPublishedAt,
                 contentUpdatedAt,
                 contentHash,
-                sourcePath);
+                sourcePath,
+                tags);
     }
 
     /** frontmatter {@code date}가 없으면 처음 발행 시각을 한국 시간으로 바꾼 날짜를 쓴다. */
@@ -159,6 +166,7 @@ public class Post {
         title = content.title();
         body = content.body();
         summary = content.summary();
+        tags = content.tags();
         displayDate = displayDate(content.date(), firstPublishedAt);
         sourcePath = content.sourcePath();
         contentHash = hash;
@@ -193,6 +201,11 @@ public class Post {
 
     public String body() {
         return body;
+    }
+
+    /** 이름순 태그. */
+    public List<Tag> tags() {
+        return tags;
     }
 
     public Summary summary() {

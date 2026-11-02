@@ -21,12 +21,13 @@ import kali.post.domain.PostStatus;
 import kali.post.domain.Slug;
 import kali.post.domain.SlugAlreadyUsedException;
 import kali.post.domain.Summary;
+import kali.post.domain.Tag;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 글을 {@code post}, {@code post_slug} 테이블에 저장한다 (db/migration/V1__create_post.sql). 시각은 UTC로 저장한다. */
+/** 글을 {@code post}, {@code post_slug}, {@code post_tag} 테이블에 저장한다 (db/migration/V1__create_post.sql). 시각은 UTC로 저장한다. */
 @Repository
 public class JdbcPostRepository implements PostRepository {
 
@@ -55,6 +56,7 @@ public class JdbcPostRepository implements PostRepository {
             } else {
                 insert(post);
             }
+            saveTags(post);
             for (Slug slug : slugs) {
                 if (slugOwner(slug).isEmpty()) {
                     jdbcClient
@@ -72,17 +74,45 @@ public class JdbcPostRepository implements PostRepository {
 
     @Override
     public Optional<Post> findById(UUID id) {
-        // 옛 slug를 먼저 읽고 글 행을 읽는다 (RowMapper 안에서 다시 조회하면 커넥션을 두 개 쥔다)
+        // 옛 slug와 태그를 먼저 읽고 글 행을 읽는다 (RowMapper 안에서 다시 조회하면 커넥션을 두 개 쥔다)
         List<Slug> slugs = jdbcClient
                 .sql("SELECT slug FROM post_slug WHERE post_id = :postId ORDER BY slug")
                 .param("postId", id.toString())
                 .query((rs, rowNum) -> new Slug(rs.getString("slug")))
                 .list();
+        List<Tag> tags = jdbcClient
+                .sql("SELECT name FROM post_tag WHERE post_id = :postId")
+                .param("postId", id.toString())
+                .query((rs, rowNum) -> new Tag(rs.getString("name")))
+                .list();
         return jdbcClient
                 .sql("SELECT * FROM post WHERE id = :id")
                 .param("id", id.toString())
-                .query((rs, rowNum) -> toPost(rs, slugs))
+                .query((rs, rowNum) -> toPost(rs, slugs, tags))
                 .optional();
+    }
+
+    @Override
+    public List<Post> findAll() {
+        return jdbcClient.sql("SELECT id FROM post ORDER BY id").query(String.class).list().stream()
+                .map(id -> findById(UUID.fromString(id)).orElseThrow())
+                .toList();
+    }
+
+    // 태그는 글의 내용이라 통째로 다시 쓴다
+    private void saveTags(Post post) {
+        String id = post.id().toString();
+        jdbcClient
+                .sql("DELETE FROM post_tag WHERE post_id = :postId")
+                .param("postId", id)
+                .update();
+        for (Tag tag : post.tags()) {
+            jdbcClient
+                    .sql("INSERT INTO post_tag (post_id, name) VALUES (:postId, :name)")
+                    .param("postId", id)
+                    .param("name", tag.name())
+                    .update();
+        }
     }
 
     @Override
@@ -146,7 +176,7 @@ public class JdbcPostRepository implements PostRepository {
                 Map.entry("sourcePath", post.sourcePath()));
     }
 
-    private static Post toPost(ResultSet rs, List<Slug> slugs) throws SQLException {
+    private static Post toPost(ResultSet rs, List<Slug> slugs, List<Tag> tags) throws SQLException {
         Slug slug = new Slug(rs.getString("slug"));
         Set<Slug> previousSlugs = new LinkedHashSet<>(slugs);
         previousSlugs.remove(slug);
@@ -162,7 +192,8 @@ public class JdbcPostRepository implements PostRepository {
                 instant(rs.getObject("first_published_at", LocalDateTime.class)),
                 instant(rs.getObject("content_updated_at", LocalDateTime.class)),
                 new ContentHash(rs.getString("content_hash"), rs.getInt("content_hash_version")),
-                rs.getString("source_path"));
+                rs.getString("source_path"),
+                tags);
     }
 
     // DATETIME(6)에 드라이버·서버 시간대와 상관없이 UTC 그대로 넣고 읽는다
