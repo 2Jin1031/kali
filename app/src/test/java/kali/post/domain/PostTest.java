@@ -187,14 +187,16 @@ class PostTest {
     }
 
     @Test
-    void 내용_해시가_같으면_노트_경로만_바뀌어도_그대로_둔다() {
+    void 내용_해시가_같아도_노트_경로는_바꾸고_수정_시각은_그대로다() {
         Post post = published();
         PostContent moved =
                 new PostContent("윈셋", new Slug("winset"), "본문", Summary.manual("요약"), null, "concepts/윈셋.md");
 
-        post.revise(moved, HASH, LATER);
+        boolean revised = post.revise(moved, HASH, LATER);
 
-        assertThat(post.sourcePath()).isEqualTo("notes/윈셋.md");
+        assertThat(revised).isFalse();
+        assertThat(post.sourcePath()).isEqualTo("concepts/윈셋.md");
+        assertThat(post.contentUpdatedAt()).isEqualTo(PUBLISHED_AT);
     }
 
     @Test

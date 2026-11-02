@@ -124,12 +124,13 @@ public class Post {
     }
 
     /**
-     * 내용을 반영한다. 내용 해시가 같으면 아무것도 바꾸지 않는다 (해시에 넣지 않는 노트 경로만 바뀐 경우의 반영은 스펙 미정 S).
-     * 다르면 내용과 노트 경로를 바꾸고 수정 시각을 {@code now}로 한다. 해시 방식 버전이 저장된 것과 다르면 {@link #rehash}와 같다.
+     * 내용을 반영한다. 노트 경로는 해시에 넣지 않으므로 해시와 상관없이 늘 노트대로 바꾼다. 내용 해시가 같으면 그 밖에는 아무것도
+     * 바꾸지 않는다. 다르면 내용을 바꾸고 수정 시각을 {@code now}로 한다. 해시 방식 버전이 저장된 것과 다르면 {@link #rehash}와 같다.
      *
      * @return 내용을 다시 썼으면 true
      */
     public boolean revise(PostContent content, ContentHash hash, Instant now) {
+        sourcePath = content.sourcePath();
         if (!contentHash.sameVersion(hash)) {
             rehash(content, hash);
             return true;
